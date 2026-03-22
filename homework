@@ -1,0 +1,275 @@
+import java.util.*;
+
+// ===================== DECORATOR PATTERN =====================
+
+// 1. Интерфейс
+interface IReport {
+    String generate();
+}
+
+// 2. Базовые отчеты
+class SalesReport implements IReport {
+    public String generate() {
+        return "Sales Report: [date=2026-03-01, amount=500]\n" +
+               "Sales Report: [date=2026-03-05, amount=300]";
+    }
+}
+
+class UserReport implements IReport {
+    public String generate() {
+        return "User: [name=Ali, age=20]\n" +
+               "User: [name=Aruzhan, age=22]";
+    }
+}
+
+// 3. Абстрактный декоратор
+abstract class ReportDecorator implements IReport {
+    protected IReport report;
+
+    public ReportDecorator(IReport report) {
+        this.report = report;
+    }
+
+    public String generate() {
+        return report.generate();
+    }
+}
+
+// 4. Декораторы
+
+// Фильтр по дате
+class DateFilterDecorator extends ReportDecorator {
+    private String fromDate;
+    private String toDate;
+
+    public DateFilterDecorator(IReport report, String from, String to) {
+        super(report);
+        this.fromDate = from;
+        this.toDate = to;
+    }
+
+    public String generate() {
+        return report.generate() + "\n[Filtered by date: " + fromDate + " - " + toDate + "]";
+    }
+}
+
+// Сортировка
+class SortingDecorator extends ReportDecorator {
+    private String criteria;
+
+    public SortingDecorator(IReport report, String criteria) {
+        super(report);
+        this.criteria = criteria;
+    }
+
+    public String generate() {
+        return report.generate() + "\n[Sorted by: " + criteria + "]";
+    }
+}
+
+// CSV экспорт
+class CsvExportDecorator extends ReportDecorator {
+    public CsvExportDecorator(IReport report) {
+        super(report);
+    }
+
+    public String generate() {
+        return report.generate() + "\n[Exported to CSV]";
+    }
+}
+
+// PDF экспорт
+class PdfExportDecorator extends ReportDecorator {
+    public PdfExportDecorator(IReport report) {
+        super(report);
+    }
+
+    public String generate() {
+        return report.generate() + "\n[Exported to PDF]";
+    }
+}
+
+// Доп декоратор (фильтр по сумме)
+class AmountFilterDecorator extends ReportDecorator {
+    private int minAmount;
+
+    public AmountFilterDecorator(IReport report, int minAmount) {
+        super(report);
+        this.minAmount = minAmount;
+    }
+
+    public String generate() {
+        return report.generate() + "\n[Filtered by amount > " + minAmount + "]";
+    }
+}
+
+
+// ===================== ADAPTER PATTERN =====================
+
+// 1. Внутренний интерфейс
+interface IInternalDeliveryService {
+    void deliverOrder(String orderId);
+    String getDeliveryStatus(String orderId);
+    double calculateCost(String orderId);
+}
+
+// 2. Внутренняя служба
+class InternalDeliveryService implements IInternalDeliveryService {
+    public void deliverOrder(String orderId) {
+        System.out.println("Internal delivery for order " + orderId);
+    }
+
+    public String getDeliveryStatus(String orderId) {
+        return "Delivered internally";
+    }
+
+    public double calculateCost(String orderId) {
+        return 10.0;
+    }
+}
+
+// 3. Внешние сервисы
+
+class ExternalLogisticsServiceA {
+    public void shipItem(int itemId) {
+        System.out.println("ServiceA shipping item " + itemId);
+    }
+
+    public String trackShipment(int shipmentId) {
+        return "ServiceA tracking...";
+    }
+
+    public double getPrice() {
+        return 15.0;
+    }
+}
+
+class ExternalLogisticsServiceB {
+    public void sendPackage(String info) {
+        System.out.println("ServiceB sending: " + info);
+    }
+
+    public String checkPackageStatus(String code) {
+        return "ServiceB status...";
+    }
+
+    public double cost() {
+        return 20.0;
+    }
+}
+
+// Доп сервис C
+class ExternalLogisticsServiceC {
+    public void process(String id) {
+        System.out.println("ServiceC processing " + id);
+    }
+
+    public String status(String id) {
+        return "ServiceC status...";
+    }
+
+    public double price() {
+        return 25.0;
+    }
+}
+
+// 4. Адаптеры
+
+class LogisticsAdapterA implements IInternalDeliveryService {
+    private ExternalLogisticsServiceA service = new ExternalLogisticsServiceA();
+
+    public void deliverOrder(String orderId) {
+        System.out.println("[LOG] AdapterA delivering...");
+        service.shipItem(Integer.parseInt(orderId));
+    }
+
+    public String getDeliveryStatus(String orderId) {
+        return service.trackShipment(Integer.parseInt(orderId));
+    }
+
+    public double calculateCost(String orderId) {
+        return service.getPrice();
+    }
+}
+
+class LogisticsAdapterB implements IInternalDeliveryService {
+    private ExternalLogisticsServiceB service = new ExternalLogisticsServiceB();
+
+    public void deliverOrder(String orderId) {
+        System.out.println("[LOG] AdapterB delivering...");
+        service.sendPackage(orderId);
+    }
+
+    public String getDeliveryStatus(String orderId) {
+        return service.checkPackageStatus(orderId);
+    }
+
+    public double calculateCost(String orderId) {
+        return service.cost();
+    }
+}
+
+class LogisticsAdapterC implements IInternalDeliveryService {
+    private ExternalLogisticsServiceC service = new ExternalLogisticsServiceC();
+
+    public void deliverOrder(String orderId) {
+        System.out.println("[LOG] AdapterC delivering...");
+        service.process(orderId);
+    }
+
+    public String getDeliveryStatus(String orderId) {
+        return service.status(orderId);
+    }
+
+    public double calculateCost(String orderId) {
+        return service.price();
+    }
+}
+
+// 5. Фабрика
+class DeliveryServiceFactory {
+    public static IInternalDeliveryService getService(String type) {
+        switch (type) {
+            case "internal":
+                return new InternalDeliveryService();
+            case "A":
+                return new LogisticsAdapterA();
+            case "B":
+                return new LogisticsAdapterB();
+            case "C":
+                return new LogisticsAdapterC();
+            default:
+                throw new IllegalArgumentException("Unknown service type");
+        }
+    }
+}
+
+
+// ===================== CLIENT =====================
+
+public class Main {
+    public static void main(String[] args) {
+
+        // ===== DECORATOR TEST =====
+        System.out.println("=== DECORATOR ===");
+
+        IReport report = new SalesReport();
+        report = new DateFilterDecorator(report, "2026-03-01", "2026-03-10");
+        report = new SortingDecorator(report, "amount");
+        report = new CsvExportDecorator(report);
+        report = new AmountFilterDecorator(report, 200);
+
+        System.out.println(report.generate());
+
+
+        // ===== ADAPTER TEST =====
+        System.out.println("\n=== ADAPTER ===");
+
+        IInternalDeliveryService service =
+                DeliveryServiceFactory.getService("A");
+
+        service.deliverOrder("123");
+        System.out.println(service.getDeliveryStatus("123"));
+        System.out.println("Cost: " + service.calculateCost("123"));
+    }
+}
